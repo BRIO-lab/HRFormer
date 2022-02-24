@@ -9,6 +9,12 @@ repository.
 '''
 
 # Imports
+import torch
+from utility import *
+
+from spatial_ocr_block import *
+from net_config import *
+
 
 
 if torch.__version__.startswith("1"):
@@ -885,20 +891,19 @@ class HRNet_W48_OCR(nn.Module):
        # TODO: figure out the best place to put the configs
        # TODO: import model configs
        # TODO: look into pre-trained networks - reference parent
-        from lib.models.backbones.hrnet.hrnet_config import MODEL_CONFIGS
+        
         self.backbone = HighResolutionNet(MODEL_CONFIGS)
 
         in_channels = 720
-        # TODO: move module helper into this
+        
         self.conv3x3 = nn.Sequential(
             nn.Conv2d(in_channels, 512, kernel_size=3, stride=1, padding=1),
             ModuleHelper.BNReLU(512, bn_type=self.configer.get("network", "bn_type")),
         )
-        # TODO: move this spatial OCR block into this code
-        from lib.models.modules.spatial_ocr_block import SpatialGather_Module
+        
         self.ocr_gather_head = SpatialGather_Module(self.num_classes)
-        # TODO: move this module into the code
-        from lib.models.modules.spatial_ocr_block import SpatialOCR_Module
+       
+        
 
         self.ocr_distri_head = SpatialOCR_Module(
             in_channels=512,
