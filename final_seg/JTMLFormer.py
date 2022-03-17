@@ -882,14 +882,13 @@ class HighResolutionNext(nn.Module):
 
 
 class HRNet_W48_OCR(nn.Module):
-    def __init__(self, configer):
+    def __init__(self, config):
         super(HRNet_W48_OCR, self).__init__()
-        self.configer = configer
-        self.num_classes = self.configer.get("data", "num_classes")
-        
-       
-       # TODO: figure out the best place to put the configs
-       # TODO: import model configs
+        #self.configer = configer
+        #self.num_classes = self.configer.get("data", "num_classes")
+        self.config = config ## this would be where we load in a specific configuation
+        self.num_classes = self.config.data["num_classes"]
+
        # TODO: look into pre-trained networks - reference parent
         
         self.backbone = HighResolutionNet(MODEL_CONFIGS)
@@ -911,7 +910,8 @@ class HRNet_W48_OCR(nn.Module):
             out_channels=512,
             scale=1,
             dropout=0.05,
-            bn_type=self.configer.get("network", "bn_type"),
+            #bn_type=self.configer.get("network", "bn_type"),
+            bn_type = self.config.network["bn_type"] # TODO: figure out how this loads the actual function
         )
         # TODO: grab batch norm type?? and move it in here
         # TODO: figure out where the batch-norm stuff

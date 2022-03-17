@@ -29,7 +29,7 @@ class ModuleHelper(object):
         if bn_type == "torchbn":
             return nn.Sequential(nn.BatchNorm2d(num_features, **kwargs), nn.ReLU())
         elif bn_type == "torchsyncbn":
-            return nn.Sequential(nn.SyncBatchNorm(num_features, **kwargs), nn.ReLU())
+            return nn.Sequential(nn.SyncBatchNorm(num_features, **kwargs), nn.ReLU())  #TODO: TORCHSYNCBN
         elif bn_type == "syncbn":
             from lib.extensions.syncbn.module import BatchNorm2d
 

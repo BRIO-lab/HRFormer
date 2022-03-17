@@ -1,4 +1,4 @@
-from python_config import Configuration
+from our_helper_config import Configuration
 
 def main():
     config = Configuration()

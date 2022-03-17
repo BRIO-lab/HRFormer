@@ -2,19 +2,19 @@ import torch
 
 import sys
 import torch.nn as nn
-import albumentations as A
+#import albumentations as A
 import numpy as np
-from albumentations.pytorch import ToTensorV2
+#from albumentations.pytorch import ToTensorV2
 
 
 class Configuration:    
     def __init__(self):
         self.dataset = 'coco_stuff'
         self.method = 'fcn_sefmentor'
-
+# TODO: figure out how to make this greyscale
         self.data = {
             "image_tool": "cv2",\
-            "input_mode": "BGR",\
+            "input_mode": "BGR",\ 
             "num_classes": 171,\
             "label_list": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 
                             21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 
