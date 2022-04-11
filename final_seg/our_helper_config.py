@@ -14,7 +14,7 @@ class Configuration:
 # TODO: figure out how to make this greyscale
         self.data = {
             "image_tool": "cv2",\
-            "input_mode": "BGR",\ 
+            "input_mode": "BGR", 
             "num_classes": 171,\
             "label_list": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 
                             21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 
@@ -124,6 +124,8 @@ class Configuration:
             "backbone": "deepbase_resnet101_dilated8",\
             "model_name": "asp_ocnet",\
             "bn_type": "torchsyncbn",\
+            # Added bn_momentum manually
+            "bn_momentum": 0.1,\
             "stride": 8,\
             "factors": [[8, 8]],\
             "loss_weights": {

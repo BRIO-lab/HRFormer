@@ -13,7 +13,9 @@ import torch
 from utility import *
 
 from spatial_ocr_block import *
-from net_config import *
+
+# swithed from YACS style of config to dictionary based
+# from net_config import *
 
 
 
@@ -359,9 +361,13 @@ blocks_dict = {"BASIC": BasicBlock, "BOTTLENECK": Bottleneck}
 
 
 class HighResolutionNet(nn.Module):
-    def __init__(self, cfg, bn_type, bn_momentum, **kwargs):
+    #def __init__(self, cfg, bn_type, bn_momentum, **kwargs):
+    def __init__(self, config):
         self.inplanes = 64
         super(HighResolutionNet, self).__init__()
+
+        bn_type = config.network["bn_type"]
+        bn_momentum = config.network["bn_momentum"]
 
         if os.environ.get("full_res_stem"):
             Log.info("using full-resolution stem with stride=1")

@@ -20,7 +20,7 @@ try:
 except ImportError:
     from urllib.request import urlretrieve
 
-from lib.utils.tools.logger import Logger as Log
+from logger import Logger as Log
 
 # TODO: figure out which of the batch norms to use when creating the model
 class ModuleHelper(object):
