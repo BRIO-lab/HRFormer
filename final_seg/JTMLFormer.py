@@ -401,9 +401,21 @@ class HighResolutionNet(nn.Module):
                 Bottleneck, 64, 64, 4, bn_type=bn_type, bn_momentum=bn_momentum
             )
 
-        self.stage2_cfg = cfg["STAGE2"]
-        num_channels = self.stage2_cfg["NUM_CHANNELS"]
-        block = blocks_dict[self.stage2_cfg["BLOCK"]]
+
+        # TODO: I don't think hardcoding the way I started would be the best way
+            #   to do this, there is so much code to change, maybe we an include
+            #   the things from "net_config.py" in "our_helper_config.py" if 
+            #   it makes sense in the architecture
+
+        #self.stage2_cfg = cfg["STAGE2"]
+        #num_channels = self.stage2_cfg["NUM_CHANNELS"]
+        #block = blocks_dict[self.stage2_cfg["BLOCK"]]
+
+        # hard coding this for now
+        self.stage2_cfg = cfg["STAGE2"] #?? idk how I would hardcode this
+        num_channels = [48, 96]
+        block = blocks_dict["BASIC"]
+
         num_channels = [
             num_channels[i] * block.expansion for i in range(len(num_channels))
         ]
