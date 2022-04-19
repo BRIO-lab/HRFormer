@@ -1,3 +1,8 @@
+## 2022-04-14
+- HighResolutionNet backbone was pulled from the backbone and consolidated into our main file JTMLFormer. We are trying to get as much as possible into a single file so we don't need to go around searching for a bunch of stuff.
+    - The backbone was prepended to the top of the file and will be called normally
+
+
 # Notes
 
 ## Big PIcture
@@ -28,3 +33,6 @@ https://arxiv.org/pdf/2007.04269.pdf
 
 HRNet:
 https://arxiv.org/pdf/1908.07919.pdf
+
+
+

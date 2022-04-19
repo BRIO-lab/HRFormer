@@ -1,22 +1,24 @@
-'''
-JTMLFormer.py
-Authors: Andrew Jensen, Daniel Torrejon, Stefan Kieszkowski
+# ------------------------------------------------------------------------------
+# Copyright (c) Microsoft
+# Licensed under the MIT License.
+# Written by Bin Xiao (Bin.Xiao@microsoft.com)
+# Modified by Rainbowsecret (yuyua@microsoft.com)
+# "High-Resolution Representations for Labeling Pixels and Regions"
+# ------------------------------------------------------------------------------
 
-The main goal of this code is to consolidate the efforts from HRNet into a
-single code that can be transported and easily used.
-It will bring in different code blocks from many different parts of the original 
-repository.
-'''
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-# Imports
+import os
+import pdb
 import torch
-from utility import *
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
 
-from spatial_ocr_block import *
-
-# swithed from YACS style of config to dictionary based
-# from net_config import *
-
+from lib.models.tools.module_helper import ModuleHelper
+from lib.utils.tools.logger import Logger as Log
 
 if torch.__version__.startswith("1"):
     relu_inplace = True
@@ -360,13 +362,9 @@ blocks_dict = {"BASIC": BasicBlock, "BOTTLENECK": Bottleneck}
 
 
 class HighResolutionNet(nn.Module):
-    #def __init__(self, cfg, bn_type, bn_momentum, **kwargs):
-    def __init__(self, cfg):
+    def __init__(self, cfg, bn_type, bn_momentum, **kwargs):
         self.inplanes = 64
         super(HighResolutionNet, self).__init__()
-
-        bn_type = cfg.network["bn_type"]
-        bn_momentum = cfg.network["bn_momentum"]
 
         if os.environ.get("full_res_stem"):
             Log.info("using full-resolution stem with stride=1")
@@ -400,23 +398,9 @@ class HighResolutionNet(nn.Module):
                 Bottleneck, 64, 64, 4, bn_type=bn_type, bn_momentum=bn_momentum
             )
 
-
-        # TODO: I don't think hardcoding the way I started would be the best way
-            #   to do this, there is so much code to change, maybe we an include
-            #   the things from "net_config.py" in "our_helper_config.py" if 
-            #   it makes sense in the architecture
-
-        #self.stage2_cfg = cfg["STAGE2"]
-        #num_channels = self.stage2_cfg["NUM_CHANNELS"]
-        #block = blocks_dict[self.stage2_cfg["BLOCK"]]
-
-        # hard coding this for now
-        #self.stage2_cfg = cfg["STAGE2"] #?? idk how I would hardcode this
-        self.stage2_cfg = cfg.stage2
-
-        num_channels = [48, 96]
-        block = blocks_dict["BASIC"]
-
+        self.stage2_cfg = cfg["STAGE2"]
+        num_channels = self.stage2_cfg["NUM_CHANNELS"]
+        block = blocks_dict[self.stage2_cfg["BLOCK"]]
         num_channels = [
             num_channels[i] * block.expansion for i in range(len(num_channels))
         ]
@@ -429,7 +413,7 @@ class HighResolutionNet(nn.Module):
             self.stage2_cfg, num_channels, bn_type=bn_type, bn_momentum=bn_momentum
         )
 
-        self.stage3_cfg = cfg.stage3
+        self.stage3_cfg = cfg["STAGE3"]
         num_channels = self.stage3_cfg["NUM_CHANNELS"]
         block = blocks_dict[self.stage3_cfg["BLOCK"]]
         num_channels = [
@@ -622,13 +606,6 @@ class HighResolutionNet(nn.Module):
         bn_type=None,
         bn_momentum=0.1,
     ):
-
-
-# Next Time: need to either make this function's layer_config paramter
-# pass in cfg instead of stage2... #line428 or add network to the stage2 dict
-#
-        bn_type = layer_config.network["bn_type"]
-
         num_modules = layer_config["NUM_MODULES"]
         num_branches = layer_config["NUM_BRANCHES"]
         num_blocks = layer_config["NUM_BLOCKS"]
@@ -732,7 +709,6 @@ class HighResolutionNext(nn.Module):
         self.relu = nn.ReLU(relu_inplace)
 
         self.stage1_cfg = cfg["STAGE1"]
-        self.stage1_cfg = cfg.stage1
         num_channels = self.stage1_cfg["NUM_CHANNELS"]
         block = blocks_dict[self.stage1_cfg["BLOCK"]]
         num_channels = [
@@ -908,81 +884,71 @@ class HighResolutionNext(nn.Module):
         return x
 
 
-class HRNet_W48_OCR(nn.Module):
-    def __init__(self, config):
-        super(HRNet_W48_OCR, self).__init__()
-        #self.configer = configer
-        #self.num_classes = self.configer.get("data", "num_classes")
-        self.config = config ## this would be where we load in a specific configuation
-        self.num_classes = self.config.data["num_classes"]
+class HRNetBackbone(object):
+    def __init__(self, configer):
+        self.configer = configer
 
-       # TODO: look into pre-trained networks - reference parent
-        
-        self.backbone = HighResolutionNet(config)
+    def __call__(self):
+        arch = self.configer.get("network", "backbone")
+        from lib.models.backbones.hrnet.hrnet_config import MODEL_CONFIGS
 
-        in_channels = 720
-        
-        self.conv3x3 = nn.Sequential(
-            nn.Conv2d(in_channels, 512, kernel_size=3, stride=1, padding=1),
-            ModuleHelper.BNReLU(512, bn_type=self.configer.get("network", "bn_type")),
-        )
-        
-        self.ocr_gather_head = SpatialGather_Module(self.num_classes)
-       
-        
+        if arch == "hrnet18":
+            arch_net = HighResolutionNet(
+                MODEL_CONFIGS["hrnet18"], bn_type="torchsyncbn", bn_momentum=0.1
+            )
+            arch_net = ModuleHelper.load_model(
+                arch_net,
+                pretrained=self.configer.get("network", "pretrained"),
+                all_match=False,
+                network="hrnet",
+            )
 
-        self.ocr_distri_head = SpatialOCR_Module(
-            in_channels=512,
-            key_channels=256,
-            out_channels=512,
-            scale=1,
-            dropout=0.05,
-            #bn_type=self.configer.get("network", "bn_type"),
-            bn_type = self.config.network["bn_type"] # TODO: figure out how this loads the actual function
-        )
-        # TODO: grab batch norm type?? and move it in here
-        # TODO: figure out where the batch-norm stuff
-        self.cls_head = nn.Conv2d(
-            512, self.num_classes, kernel_size=1, stride=1, padding=0, bias=True
-        )
-        self.aux_head = nn.Sequential(
-            nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1),
-            ModuleHelper.BNReLU(
-                in_channels, bn_type=self.configer.get("network", "bn_type")
-            ),
-            nn.Conv2d(
-                in_channels,
-                self.num_classes,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                bias=True,
-            ),
-        )
+        elif arch == "hrnet32":
+            arch_net = HighResolutionNet(
+                MODEL_CONFIGS["hrnet32"], bn_type="torchsyncbn", bn_momentum=0.1
+            )
+            arch_net = ModuleHelper.load_model(
+                arch_net,
+                pretrained=self.configer.get("network", "pretrained"),
+                all_match=False,
+                network="hrnet",
+            )
 
-    def forward(self, x_):
-        x = self.backbone(x_)
-        _, _, h, w = x[0].size()
+        elif arch == "hrnet48":
+            arch_net = HighResolutionNet(
+                MODEL_CONFIGS["hrnet48"], bn_type="torchsyncbn", bn_momentum=0.1
+            )
+            arch_net = ModuleHelper.load_model(
+                arch_net,
+                pretrained=self.configer.get("network", "pretrained"),
+                all_match=False,
+                network="hrnet",
+            )
 
-        feat1 = x[0]
-        feat2 = F.interpolate(x[1], size=(h, w), mode="bilinear", align_corners=True)
-        feat3 = F.interpolate(x[2], size=(h, w), mode="bilinear", align_corners=True)
-        feat4 = F.interpolate(x[3], size=(h, w), mode="bilinear", align_corners=True)
+        elif arch == "hrnet64":
+            arch_net = HighResolutionNet(
+                MODEL_CONFIGS["hrnet64"], bn_type="torchsyncbn", bn_momentum=0.1
+            )
+            arch_net = ModuleHelper.load_model(
+                arch_net,
+                pretrained=self.configer.get("network", "pretrained"),
+                all_match=False,
+                network="hrnet",
+            )
 
-        feats = torch.cat([feat1, feat2, feat3, feat4], 1)
-        out_aux = self.aux_head(feats)
+        elif arch == "hrnet2x20":
+            arch_net = HighResolutionNext(
+                MODEL_CONFIGS["hrnet2x20"],
+                bn_type=self.configer.get("network", "bn_type"),
+            )
+            arch_net = ModuleHelper.load_model(
+                arch_net,
+                pretrained=self.configer.get("network", "pretrained"),
+                all_match=False,
+                network="hrnet",
+            )
 
-        feats = self.conv3x3(feats)
+        else:
+            raise Exception("Architecture undefined!")
 
-        context = self.ocr_gather_head(feats, out_aux)
-        feats = self.ocr_distri_head(feats, context)
-
-        out = self.cls_head(feats)
-
-        out_aux = F.interpolate(
-            out_aux, size=(x_.size(2), x_.size(3)), mode="bilinear", align_corners=True
-        )
-        out = F.interpolate(
-            out, size=(x_.size(2), x_.size(3)), mode="bilinear", align_corners=True
-        )
-        return out_aux, out
+        return arch_net

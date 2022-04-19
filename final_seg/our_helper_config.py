@@ -14,7 +14,7 @@ class Configuration:
 # TODO: figure out how to make this greyscale
         self.data = {
             "image_tool": "cv2",\
-            "input_mode": "BGR", 
+            "input_mode": "GREY", #fix this to load greyscale
             "num_classes": 171,\
             "label_list": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 
                             21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 
@@ -36,7 +36,7 @@ class Configuration:
                 "batch_size": 16,\
                 "data_transformer": {
                     "size_mode": "fix_size",\
-                    "input_size": [520, 520],\
+                    "input_size": [1024,1024],\
                     "align_method": "only_pad",\
                     "pad_mode": "random"
                 }
@@ -190,6 +190,26 @@ class Configuration:
                 "ohem_minkeep": 100000,\
                 "ohem_thresh": 0.9
             }
+        }
+############# DO NOT EDIT BELOW THIS LINE #############################
+############# YOU HAVE BEEN WARNED ####################################
+############# SERIOUSLY DONT DO IT !###################################
+        self.stage2 = {
+            "NUM_MODULES" : 1,\
+            "NUM_BRANCHES" : 2,\
+            "NUM_BLOCKS" : [4, 4],\
+            "NUM_CHANNELS" : [48, 96],\
+            "BLOCK" : "BASIC",\
+            "FUSE_METHOD" : "SUM"
+        }
+
+        self.stage3 = {
+            "NUM_MODULES" : 4,\
+            "NUM_BRANCHES" : 3,\
+            "NUM_BLOCKS" : [4, 4, 4],\
+            "NUM_CHANNELS" : [48, 96, 192],\
+            "BLOCK" : "BASIC",\
+            "FUSE_METHOD" : "SUM"
         }
 
 
